@@ -6,7 +6,25 @@
 #define N 20
 #define HELP_MSG "Справка о функциях.\nПосле вывода информации о варианте курсовой работе программа ожидает ввода пользователем числа – номера команды:\n0 – вывод текста после первичной обязательной обработки.\n1 – Вывести список всех цифр встречаемых во всем тексте и частоту их упоминания.\n2 – Преобразовать предложение так, чтобы символы кроме разделительных шли в обратном порядке. Например, для строки “abc defg.” результатом будет “gfe dcba.”.\n3 – Удалить все предложения в которых встречается слово “physics”.\n4 – Отсортировать предложения по уменьшению количества слов, длина которых равняется 3.\n5 – вывод справки о функциях, которые реализует программа.\n"
 
+char *my_strdup(const char *src) {
+    size_t len = strlen(src) + 1;
+    char *res = (char *)malloc(len);
 
+    if (res != NULL) {
+        memcpy(res, src, len);
+    }
+    return res;
+}
+int my_strcasecmp(const char *s1, const char *s2) {
+    while (*s1 && *s2) {
+        if (tolower(*s1) != tolower(*s2)) {
+            return tolower(*s1) - tolower(*s2);
+        }
+        s1++;
+        s2++;
+    }
+    return tolower(*s1) - tolower(*s2);
+}
 void free_memory(char **text, int max_count_string){
     for (int i = 0; i < max_count_string; i++){
         if (text[i] != NULL){
@@ -35,9 +53,14 @@ void count_numbers_in_text(char **text, int *count_sents, int *numbers){
         }  
     }
 }
+
 int countWordsOfLengthThree(const char *sentence){
     int count = 0;
-    char *sentenceCpy = strdup(sentence);
+    char *sentenceCpy = my_strdup(sentence);
+    if (sentenceCpy == NULL){
+        fprintf(stderr, "error: Memory Allocation Error\n");
+        exit(0);
+    }
     char *token = strtok(sentenceCpy, " ,.");
     while (token != NULL){
         if (strlen(token) == 3){
@@ -63,12 +86,12 @@ char **remove_sents_with_physics(char **text, int *count_sents, int *max_count_s
     char *test;
     int i = 0;
     while (i < *count_sents){
-        char *sentenceCopy = strdup(text[i]);
+        char *sentenceCopy = my_strdup(text[i]);
         checkNull(text, *max_count_string, sentenceCopy);
         
         char *word = strtok(sentenceCopy, " ,.");
         while (word != NULL){
-            if (strcasecmp(word, keyword) == 0){
+            if (my_strcasecmp(word, keyword) == 0){
                 test = text[i];
                 for (int j = i; j < *max_count_string - 1; j++){
                     text[j] = text[j + 1];
@@ -84,6 +107,7 @@ char **remove_sents_with_physics(char **text, int *count_sents, int *max_count_s
         i++;
         free(sentenceCopy);
     }
+    return text;
 }
 
 char **reverse_sentences(char **text, int *count_sents){
@@ -185,7 +209,7 @@ char **del_identical_sents(char **text, int *count_sents, int *max_count_string)
     while (i < *count_sents){
         int j = i + 1;
         while (j < *count_sents){
-            if (strcasecmp(text[i], text[j]) == 0){
+            if (my_strcasecmp(text[i], text[j]) == 0){
                 test = text[j];
                 for (int k = j; k < *max_count_string - 1; k++){
                      text[k]=text[k+1];
@@ -204,7 +228,7 @@ char **del_identical_sents(char **text, int *count_sents, int *max_count_string)
 
 void out(char **text, int count_sents){
     for (int j = 0; j < count_sents; j++){
-        printf("%d) %s\n",j, text[j]);
+        printf("%s\n", text[j]);
     }
     return;
 }
@@ -215,7 +239,8 @@ int main(){
     int instruction = -1, count_sents = 0;
     int max_count_string = N;
     int check_err = scanf("%d", &instruction);
-    getchar();
+    if (instruction != 5)
+        getchar();
     
     if (check_err == 0){
         printf("error: instruction reading error\n");
@@ -247,7 +272,7 @@ int main(){
         case 3:
             text = read_text(&count_sents, &max_count_string);
             del_identical_sents(text, &count_sents, &max_count_string); 
-            remove_sents_with_physics(text, &count_sents, &max_count_string);
+            text = remove_sents_with_physics(text, &count_sents, &max_count_string);
             out(text, count_sents);
             break;
         case 4:
